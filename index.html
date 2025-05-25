@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Electronics Practical Manual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Visualization & Content Choices: 
+        - Experiment Navigation: Sidebar links for direct access. Goal: Easy switching. Method: JS to show/hide content sections.
+        - Experiment Sections (Aim, Theory, etc.): Displayed as distinct blocks. Goal: Clear information hierarchy. Method: HTML structure, Tailwind styling.
+        - Circuit Diagrams: Recreated using HTML divs and Tailwind for basic shapes and connections, as Mermaid/SVG are disallowed. Goal: Visual representation of setup. Method: Styled HTML elements.
+        - I-V Curves & Frequency Responses (Charts for Exp 1, 2, 4): Chart.js line charts with sample data. Goal: Visualize key characteristics. Interaction: Tooltips on hover. Justification: Essential for understanding experimental results. Library: Chart.js.
+        - Waveform Sketches (Exp 5, 6): Simple HTML/CSS representations (e.g., styled divs) or textual descriptions. Goal: Illustrate input/output transformations. Method: HTML/CSS.
+        - Tables for Observations: Standard HTML tables. Goal: Structured data presentation.
+        - Collapsible Sections: For lengthy theory or procedure sections to improve readability. Goal: Reduce clutter. Method: JS toggle.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+        
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .nav-link {
+            display: block;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        .nav-link:hover {
+            background-color: #e0f2fe; /* sky-100 */
+            color: #0c4a6e; /* sky-800 */
+        }
+        .nav-link.active {
+            background-color: #0ea5e9; /* sky-500 */
+            color: white;
+            font-weight: 600;
+        }
+        .circuit-diagram {
+            border: 1px solid #cbd5e1; /* slate-300 */
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f8fafc; /* slate-50 */
+            border-radius: 0.375rem;
+        }
+        .circuit-component {
+            border: 1px solid #334155; /* slate-700 */
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem;
+            background-color: white;
+            font-size: 0.875rem;
+            border-radius: 0.25rem;
+            text-align: center;
+        }
+        .wire {
+            height: 1px;
+            background-color: #334155; /* slate-700 */
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+        .wire-vertical {
+            width: 1px;
+            background-color: #334155; /* slate-700 */
+            height: 20px; /* Adjust as needed */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Example max-width */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Base height */
+            max-height: 400px; /* Max height */
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .collapsible-content {
+            display: none;
+            margin-top: 0.5rem;
+            padding-left: 1rem;
+            border-left: 2px solid #0ea5e9; /* sky-500 */
+        }
+        .collapsible-trigger {
+            cursor: pointer;
+            color: #0ea5e9; /* sky-500 */
+            font-weight: 500;
+        }
+         .waveform-sketch {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 1rem;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .waveform-shape {
+            border: 2px solid #0ea5e9; /* sky-500 */
+            background-color: #f0f9ff; /* sky-50 */
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="flex min-h-screen">
+        <aside class="w-64 bg-white p-4 shadow-lg space-y-2 fixed top-0 left-0 h-full overflow-y-auto">
+            <h1 class="text-xl font-bold text-sky-700 mb-6">Electronics Lab</h1>
+            <a href="#" class="nav-link active" onclick="showSection('exp1', this)">1. PN Junction Diode</a>
+            <a href="#" class="nav-link" onclick="showSection('exp2', this)">2. BJT Amplifier</a>
+            <a href="#" class="nav-link" onclick="showSection('exp3', this)">3. Op-Amp Amplifiers</a>
+            <a href="#" class="nav-link" onclick="showSection('exp4', this)">4. Active Low Pass Filter</a>
+            <a href="#" class="nav-link" onclick="showSection('exp5', this)">5. Differentiator & Integrator</a>
+            <a href="#" class="nav-link" onclick="showSection('exp6', this)">6. Waveform Generators</a>
+        </aside>
+
+        <main class="flex-1 ml-64 p-6 md:p-8 overflow-y-auto">
+            
+            <section id="exp1" class="content-section active">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">Experiment 1: Study the I-V Characteristics of a PN Junction Diode</h2>
+                <p class="mb-4 text-gray-600">This experiment focuses on understanding and plotting the current-voltage (I-V) characteristics of a PN junction diode under both forward and reverse bias conditions. This is fundamental to understanding diode behavior in electronic circuits.</p>
+
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Aim</h3>
+                    <p>To study and plot the forward and reverse bias I-V characteristics of a PN junction diode.</p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Apparatus Required</h3>
+                    <ul class="list-disc list-inside text-gray-700">
+                        <li>PN Junction Diode (e.g., 1N4007)</li>
+                        <li>DC Regulated Power Supply (0-30V, variable)</li>
+                        <li>Milliammeter (0-50 mA)</li>
+                        <li>Microammeter (0-50 &mu;A)</li>
+                        <li>Voltmeter (0-1V for forward bias, 0-30V for reverse bias)</li>
+                        <li>Breadboard</li>
+                        <li>Connecting Wires</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2 collapsible-trigger" onclick="toggleCollapse(this)">Theory (Click to expand)</h3>
+                    <div class="collapsible-content text-gray-700">
+                        <p>A PN junction diode is a two-terminal semiconductor device that allows current to flow predominantly in one direction. It is formed by joining P-type and N-type semiconductor materials.</p>
+                        <p class="mt-2"><strong>Forward Bias:</strong> When the positive terminal of the external DC voltage source is connected to the P-side and the negative terminal to the N-side, the diode is said to be forward biased. This connection reduces the width of the depletion region and lowers the potential barrier. Once the applied voltage exceeds the knee voltage (approximately 0.7V for Silicon and 0.3V for Germanium), the diode starts conducting heavily.</p>
+                        <p class="mt-2"><strong>Reverse Bias:</strong> When the negative terminal of the external DC voltage source is connected to the P-side and the positive terminal to the N-side, the diode is said to be reverse biased. This connection increases the width of the depletion region and strengthens the potential barrier. A very small leakage current (reverse saturation current) flows due to minority carriers. If the reverse voltage is increased beyond a certain limit, called the Zener breakdown voltage or avalanche breakdown voltage, the diode breaks down and conducts heavily in the reverse direction, which can damage the diode if current is not limited.</p>
+                        <p class="mt-2">The diode current (I) as a function of voltage (V) is given by the Shockley diode equation: <br> <code class="bg-gray-200 p-1 rounded">I = I_0 ( e<sup>(qV / &eta;kT)</sup> - 1 )</code></p>
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li>I<sub>0</sub> is the reverse saturation current</li>
+                            <li>q is the charge of an electron (1.6 x 10<sup>-19</sup> C)</li>
+                            <li>V is the voltage across the diode</li>
+                            <li>&eta; is the ideality factor (typically 1 for Germanium, 1 to 2 for Silicon)</li>
+                            <li>k is Boltzmann's constant (1.38 x 10<sup>-23</sup> J/K)</li>
+                            <li>T is the absolute temperature in Kelvin</li>
+                        </ul>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Circuit Diagram / Experimental Setup</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="text-lg font-normal text-sky-500 mb-1">Forward Bias</h4>
+                            <div class="circuit-diagram">
+                                <div class="circuit-component">DC Power Supply +</div>
+                                <div class="wire-vertical"></div>
+                                <div class="circuit-component">Resistor (Current Limiting)</div>
+                                <div class="wire-vertical"></div>
+                                <div class="flex items-center">
+                                     <div class="circuit-component mr-2">Milliammeter</div>
+                                     <div class="circuit-component">Diode Anode (P) &rarr; Cathode (N)</div>
+                                </div>
+                                <div class="wire-vertical"></div>
+                                <div class="circuit-component">DC Power Supply -</div>
+                                <p class="text-xs mt-2">Voltmeter connected across the diode.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-normal text-sky-500 mb-1">Reverse Bias</h4>
+                            <div class="circuit-diagram">
+                                <div class="circuit-component">DC Power Supply -</div>
+                                <div class="wire-vertical"></div>
+                                <div class="flex items-center">
+                                    <div class="circuit-component mr-2">Microammeter</div>
+                                    <div class="circuit-component">Diode Anode (P) &larr; Cathode (N)</div>
+                                </div>
+                                <div class="wire-vertical"></div>
+                                <div class="circuit-component">DC Power Supply +</div>
+                                <p class="text-xs mt-2">Voltmeter connected across the diode.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2 collapsible-trigger" onclick="toggleCollapse(this)">Procedure (Click to expand)</h3>
+                    <div class="collapsible-content text-gray-700">
+                        <h4 class="font-semibold mt-2">A. Forward Bias Characteristics</h4>
+                        <ol class="list-decimal list-inside ml-4">
+                            <li>Connect the circuit as shown in the forward bias circuit diagram.</li>
+                            <li>Set the DC power supply voltage to zero.</li>
+                            <li>Slowly increase the forward voltage (V<sub>F</sub>) in small steps (e.g., 0.05V or 0.1V).</li>
+                            <li>For each step, record the corresponding forward current (I<sub>F</sub>) and voltage (V<sub>F</sub>).</li>
+                            <li>Continue increasing voltage until current reaches a significant value (e.g., 20-30 mA).</li>
+                        </ol>
+                        <h4 class="font-semibold mt-2">B. Reverse Bias Characteristics</h4>
+                        <ol class="list-decimal list-inside ml-4">
+                            <li>Connect the circuit as shown in the reverse bias circuit diagram.</li>
+                            <li>Set the DC power supply voltage to zero.</li>
+                            <li>Slowly increase the reverse voltage (V<sub>R</sub>) in steps (e.g., 0.5V or 1V).</li>
+                            <li>For each step, record the corresponding reverse current (I<sub>R</sub>) and voltage (V<sub>R</sub>).</li>
+                            <li>Continue increasing voltage until breakdown or max safe voltage.</li>
+                        </ol>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Sample I-V Characteristics Chart</h3>
+                    <div class="chart-container bg-white p-4 rounded-lg shadow">
+                        <canvas id="pnDiodeChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Observations and Readings (Example Table)</h3>
+                    <div class="overflow-x-auto mb-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 1.1: Forward Bias Readings</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Forward Voltage (V<sub>F</sub>) (V)</th>
+                                    <th class="py-2 px-4 border-b">Forward Current (I<sub>F</sub>) (mA)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">0.0</td><td class="py-2 px-4 border-b text-center">0.0</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">0.1</td><td class="py-2 px-4 border-b text-center">0.0</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">0.2</td><td class="py-2 px-4 border-b text-center">0.0</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">4</td><td class="py-2 px-4 border-b text-center">0.3</td><td class="py-2 px-4 border-b text-center">0.0</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">5</td><td class="py-2 px-4 border-b text-center">0.4</td><td class="py-2 px-4 border-b text-center">0.1</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">6</td><td class="py-2 px-4 border-b text-center">0.5</td><td class="py-2 px-4 border-b text-center">0.5</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">7</td><td class="py-2 px-4 border-b text-center">0.6</td><td class="py-2 px-4 border-b text-center">2.5</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">8</td><td class="py-2 px-4 border-b text-center">0.7</td><td class="py-2 px-4 border-b text-center">12.0</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">9</td><td class="py-2 px-4 border-b text-center">0.8</td><td class="py-2 px-4 border-b text-center">25.0</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 1.2: Reverse Bias Readings</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Reverse Voltage (V<sub>R</sub>) (V)</th>
+                                    <th class="py-2 px-4 border-b">Reverse Current (I<sub>R</sub>) (&mu;A)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">0</td><td class="py-2 px-4 border-b text-center">0.0</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">5</td><td class="py-2 px-4 border-b text-center">0.1</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">10</td><td class="py-2 px-4 border-b text-center">0.2</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">4</td><td class="py-2 px-4 border-b text-center">20</td><td class="py-2 px-4 border-b text-center">0.4</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">5</td><td class="py-2 px-4 border-b text-center">30</td><td class="py-2 px-4 border-b text-center">0.8</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">6</td><td class="py-2 px-4 border-b text-center">40 (Breakdown)</td><td class="py-2 px-4 border-b text-center">15.0</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Conclusion</h3>
+                    <p class="text-gray-700">The experiment demonstrates the unidirectional current flow of a PN junction diode. The forward bias shows current increase after knee voltage, and reverse bias shows small leakage current until breakdown.</p>
+                </div>
+            </section>
+
+            <section id="exp2" class="content-section">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">Experiment 2: Design an Amplifier using BJT</h2>
+                 <p class="mb-4 text-gray-600">This experiment involves designing a common emitter (CE) amplifier using a Bipolar Junction Transistor (BJT). The focus is on understanding biasing, calculating gain, and observing the amplifier's characteristics, including its frequency response.</p>
+                
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Aim</h3>
+                    <p>To design and implement a common emitter (CE) amplifier using a Bipolar Junction Transistor (BJT) and study its voltage gain and frequency response.</p>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2 collapsible-trigger" onclick="toggleCollapse(this)">Theory (Click to expand)</h3>
+                    <div class="collapsible-content text-gray-700">
+                        <p>A BJT in common emitter configuration provides voltage, current, and power gain. Proper biasing (e.g., voltage divider bias) sets the Q-point in the active region. The voltage gain (A<sub>v</sub>) is approximately -R<sub>C</sub>/r<sub>e</sub>', where r<sub>e</sub>' is the AC emitter resistance. The negative sign indicates a 180&deg; phase shift.</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Circuit Diagram: CE Amplifier</h3>
+                    <div class="circuit-diagram">
+                        <div class="circuit-component">Vcc</div>
+                        <div class="flex">
+                            <div class="flex flex-col items-center mr-4">
+                                <div class="circuit-component">R1</div>
+                                <div class="wire-vertical"></div>
+                                <div class="circuit-component">R2</div>
+                                <div class="wire-vertical"></div>
+                                <div class="circuit-component">Ground</div>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <div class="circuit-component">Rc</div>
+                                <div class="wire-vertical"></div>
+                                <div class="circuit-component">Q1 (NPN) Collector</div>
+                                <div class="circuit-component">Q1 Base &larr; (Vin via Cin) &uarr; (from R1/R2 junction)</div>
+                                <div class="circuit-component">Q1 Emitter</div>
+                                <div class="wire-vertical"></div>
+                                <div class="flex">
+                                    <div class="circuit-component mr-2">Re</div>
+                                    <div class="circuit-component">Ce (Bypass)</div>
+                                </div>
+                                <div class="wire-vertical"></div>
+                                <div class="circuit-component">Ground</div>
+                            </div>
+                        </div>
+                        <p class="text-xs mt-2">Output (Vout) taken from Collector via Cout.</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Sample Frequency Response Chart</h3>
+                    <div class="chart-container bg-white p-4 rounded-lg shadow">
+                        <canvas id="bjtAmplifierChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Observations and Readings (Example Table)</h3>
+                    <div class="overflow-x-auto mb-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 2.1: DC Biasing Measurements</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">Parameter</th>
+                                    <th class="py-2 px-4 border-b">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b">V<sub>CC</sub></td><td class="py-2 px-4 border-b">12 V</td></tr>
+                                <tr><td class="py-2 px-4 border-b">V<sub>B</sub></td><td class="py-2 px-4 border-b">2.7 V</td></tr>
+                                <tr><td class="py-2 px-4 border-b">V<sub>E</sub></td><td class="py-2 px-4 border-b">2.0 V</td></tr>
+                                <tr><td class="py-2 px-4 border-b">V<sub>C</sub></td><td class="py-2 px-4 border-b">7.0 V</td></tr>
+                                <tr><td class="py-2 px-4 border-b">V<sub>CE</sub></td><td class="py-2 px-4 border-b">5.0 V</td></tr>
+                                <tr><td class="py-2 px-4 border-b">I<sub>C</sub> (approx)</td><td class="py-2 px-4 border-b">1.0 mA</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 2.2: AC Characteristics (Input V<sub>in</sub> = 10mVp-p)</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Input Frequency (Hz)</th>
+                                    <th class="py-2 px-4 border-b">Output Voltage (V<sub>out</sub> Peak-to-Peak) (mV)</th>
+                                    <th class="py-2 px-4 border-b">Practical Gain (V<sub>out</sub>/V<sub>in</sub>)</th>
+                                    <th class="py-2 px-4 border-b">Phase Relationship</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">100</td><td class="py-2 px-4 border-b text-center">50</td><td class="py-2 px-4 border-b text-center">5</td><td class="py-2 px-4 border-b text-center">180&deg; out of phase</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">300</td><td class="py-2 px-4 border-b text-center">30</td><td class="py-2 px-4 border-b text-center">180&deg; out of phase</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">10000</td><td class="py-2 px-4 border-b text-center">280</td><td class="py-2 px-4 border-b text-center">28</td><td class="py-2 px-4 border-b text-center">180&deg; out of phase</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">4</td><td class="py-2 px-4 border-b text-center">100000</td><td class="py-2 px-4 border-b text-center">150</td><td class="py-2 px-4 border-b text-center">15</td><td class="py-2 px-4 border-b text-center">180&deg; out of phase</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Conclusion</h3>
+                    <p class="text-gray-700">The CE BJT amplifier provides voltage gain with a 180&deg; phase shift. Its frequency response shows a specific bandwidth of operation.</p>
+                </div>
+            </section>
+
+            <section id="exp3" class="content-section">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">Experiment 3: Design and Implementation of Inverting and Non-Inverting Amplifiers using Op-Amp</h2>
+                <p class="mb-4 text-gray-600">This experiment covers two fundamental Op-Amp configurations: the inverting amplifier, which provides gain with a phase inversion, and the non-inverting amplifier, which provides gain without phase inversion. Understanding these is key to many analog circuit designs.</p>
+
+                <div class="mt-6">
+                    <h3 class="text-xl font-medium text-sky-600 mb-2">A. Inverting Amplifier</h3>
+                    <p class="text-gray-700">Gain: A<sub>v</sub> = -R<sub>f</sub>/R<sub>i</sub>. Output is 180&deg; out of phase with input.</p>
+                    <div class="circuit-diagram">
+                        <div class="circuit-component">Vin &rarr; Ri &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">OpAmp Non-Inverting (+) &rarr; Ground</div>
+                        <div class="circuit-component">Feedback: OpAmp Output &rarr; Rf &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">Vout from OpAmp Output</div>
+                         <p class="text-xs mt-2">OpAmp powered by &plusmn;Vcc.</p>
+                    </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 3.1: Inverting Amplifier Readings (R<sub>i</sub>=10k&Omega;, R<sub>f</sub>=50k&Omega;, Designed Gain = -5)</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Input Voltage (V<sub>in</sub> Peak-to-Peak) (mV)</th>
+                                    <th class="py-2 px-4 border-b">Output Voltage (V<sub>out</sub> Peak-to-Peak) (mV)</th>
+                                    <th class="py-2 px-4 border-b">Practical Gain (V<sub>out</sub>/V<sub>in</sub>)</th>
+                                    <th class="py-2 px-4 border-b">Phase Relationship</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">50</td><td class="py-2 px-4 border-b text-center">250</td><td class="py-2 px-4 border-b text-center">-5</td><td class="py-2 px-4 border-b text-center">180&deg; out of phase</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">100</td><td class="py-2 px-4 border-b text-center">500</td><td class="py-2 px-4 border-b text-center">-5</td><td class="py-2 px-4 border-b text-center">180&deg; out of phase</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">200</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">-5</td><td class="py-2 px-4 border-b text-center">180&deg; out of phase</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h3 class="text-xl font-medium text-sky-600 mb-2">B. Non-Inverting Amplifier</h3>
+                    <p class="text-gray-700">Gain: A<sub>v</sub> = 1 + R<sub>f</sub>/R<sub>i</sub>. Output is in phase with input.</p>
+                     <div class="circuit-diagram">
+                        <div class="circuit-component">Vin &rarr; OpAmp Non-Inverting (+)</div>
+                        <div class="circuit-component">Feedback: OpAmp Output &rarr; Rf &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">OpAmp Inverting (-) &rarr; Ri &rarr; Ground</div>
+                        <div class="circuit-component">Vout from OpAmp Output</div>
+                        <p class="text-xs mt-2">OpAmp powered by &plusmn;Vcc.</p>
+                    </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 3.2: Non-Inverting Amplifier Readings (R<sub>i</sub>=10k&Omega;, R<sub>f</sub>=20k&Omega;, Designed Gain = 3)</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Input Voltage (V<sub>in</sub> Peak-to-Peak) (mV)</th>
+                                    <th class="py-2 px-4 border-b">Output Voltage (V<sub>out</sub> Peak-to-Peak) (mV)</th>
+                                    <th class="py-2 px-4 border-b">Practical Gain (V<sub>out</sub>/V<sub>in</sub>)</th>
+                                    <th class="py-2 px-4 border-b">Phase Relationship</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">50</td><td class="py-2 px-4 border-b text-center">150</td><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">In phase</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">100</td><td class="py-2 px-4 border-b text-center">300</td><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">In phase</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">200</td><td class="py-2 px-4 border-b text-center">600</td><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">In phase</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Conclusion</h3>
+                    <p class="text-gray-700">Op-Amp inverting and non-inverting configurations provide predictable voltage gain determined by external resistors, with specific phase relationships.</p>
+                </div>
+            </section>
+
+            <section id="exp4" class="content-section">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">Experiment 4: Design of Active Low Pass Filter using Op-Amp</h2>
+                <p class="mb-4 text-gray-600">This experiment focuses on designing a first-order active low-pass filter. Such filters pass low-frequency signals while attenuating high-frequency signals. The "active" part, using an Op-Amp, provides gain and buffering.</p>
+                
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2 collapsible-trigger" onclick="toggleCollapse(this)">Theory (Click to expand)</h3>
+                    <div class="collapsible-content text-gray-700">
+                        <p>An active low-pass filter uses an Op-Amp to provide gain and isolate the filter from load effects. For a first-order filter, the cutoff frequency (f<sub>c</sub>) is 1/(2&pi;RC). The passband gain for a non-inverting configuration is 1 + R<sub>f</sub>/R<sub>i</sub>.</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Circuit Diagram: Active LPF</h3>
+                    <div class="circuit-diagram">
+                        <div class="circuit-component">Vin &rarr; R &rarr; OpAmp Non-Inverting (+)</div>
+                        <div class="circuit-component">OpAmp Non-Inverting (+) &rarr; C &rarr; Ground</div>
+                        <div class="circuit-component">Feedback: OpAmp Output &rarr; Rf &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">OpAmp Inverting (-) &rarr; Ri &rarr; Ground</div>
+                        <div class="circuit-component">Vout from OpAmp Output</div>
+                         <p class="text-xs mt-2">OpAmp powered by &plusmn;Vcc.</p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Sample Frequency Response Chart</h3>
+                    <div class="chart-container bg-white p-4 rounded-lg shadow">
+                        <canvas id="lpfChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Observations and Readings (Example Table)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 4.1: Active Low Pass Filter Frequency Response (Designed f<sub>c</sub> = 1kHz, Passband Gain = 6dB)</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Input Frequency (Hz)</th>
+                                    <th class="py-2 px-4 border-b">Input Voltage (V<sub>in</sub> Peak-to-Peak) (V)</th>
+                                    <th class="py-2 px-4 border-b">Output Voltage (V<sub>out</sub> Peak-to-Peak) (V)</th>
+                                    <th class="py-2 px-4 border-b">Gain (V<sub>out</sub>/V<sub>in</sub>)</th>
+                                    <th class="py-2 px-4 border-b">Gain (dB)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">100</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">1.98</td><td class="py-2 px-4 border-b text-center">1.98</td><td class="py-2 px-4 border-b text-center">5.93</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">500</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">1.80</td><td class="py-2 px-4 border-b text-center">1.80</td><td class="py-2 px-4 border-b text-center">5.10</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">1.41</td><td class="py-2 px-4 border-b text-center">1.41</td><td class="py-2 px-4 border-b text-center">2.98</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">4</td><td class="py-2 px-4 border-b text-center">2000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">0.89</td><td class="py-2 px-4 border-b text-center">0.89</td><td class="py-2 px-4 border-b text-center">-1.01</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">5</td><td class="py-2 px-4 border-b text-center">5000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">0.38</td><td class="py-2 px-4 border-b text-center">0.38</td><td class="py-2 px-4 border-b text-center">-8.40</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                 <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Conclusion</h3>
+                    <p class="text-gray-700">The active low-pass filter effectively attenuates frequencies above its cutoff frequency, with gain in the passband determined by the Op-Amp configuration.</p>
+                </div>
+            </section>
+
+            <section id="exp5" class="content-section">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">Experiment 5: Realisation of Differentiator and Integrator using Op-Amp</h2>
+                <p class="mb-4 text-gray-600">This experiment explores two important Op-Amp applications: the differentiator, which produces an output proportional to the rate of change of the input, and the integrator, which produces an output proportional to the integral of the input. These circuits are fundamental in signal processing.</p>
+                
+                <div class="mt-6">
+                    <h3 class="text-xl font-medium text-sky-600 mb-2">A. Op-Amp Differentiator</h3>
+                    <p class="text-gray-700">Output: V<sub>out</sub> = -RC (dV<sub>in</sub>/dt). Practical versions include R<sub>s</sub> and C<sub>f</sub> for stability.</p>
+                    <div class="circuit-diagram">
+                        <div class="circuit-component">Vin &rarr; Rs &rarr; C &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">OpAmp Non-Inverting (+) &rarr; Ground</div>
+                        <div class="circuit-component">Feedback: OpAmp Output &rarr; Rf (with Cf in parallel) &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">Vout from OpAmp Output</div>
+                    </div>
+                    <div class="waveform-sketch">
+                        <div>Input: Square Wave <div class="waveform-shape w-16 h-8 mt-1"></div></div>
+                        <div>&rarr;</div>
+                        <div>Output: Spikes <div class="waveform-shape w-16 h-8 mt-1 flex justify-around items-end"><div class="w-1 h-6 bg-sky-500"></div><div class="w-1 h-6 bg-sky-500 transform scale-y-[-1]"></div></div></div>
+                    </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 5.1: Differentiator Waveform Observations</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Input Waveform</th>
+                                    <th class="py-2 px-4 border-b">Input Frequency (Hz)</th>
+                                    <th class="py-2 px-4 border-b">Input Voltage (Vp-p)</th>
+                                    <th class="py-2 px-4 border-b">Observed Output Waveform Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">Square Wave</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">Positive and negative spikes</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">Sine Wave</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">Cosine wave (90&deg; phase shifted sine)</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">Triangle Wave</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">Square wave</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h3 class="text-xl font-medium text-sky-600 mb-2">B. Op-Amp Integrator</h3>
+                    <p class="text-gray-700">Output: V<sub>out</sub> = -(1/RC) &int;V<sub>in</sub> dt. Practical versions include a large R<sub>f</sub> in parallel with C.</p>
+                    <div class="circuit-diagram">
+                        <div class="circuit-component">Vin &rarr; R &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">OpAmp Non-Inverting (+) &rarr; Ground</div>
+                        <div class="circuit-component">Feedback: OpAmp Output &rarr; C (with large Rf in parallel) &rarr; OpAmp Inverting (-)</div>
+                        <div class="circuit-component">Vout from OpAmp Output</div>
+                    </div>
+                     <div class="waveform-sketch">
+                        <div>Input: Square Wave <div class="waveform-shape w-16 h-8 mt-1"></div></div>
+                        <div>&rarr;</div>
+                        <div>Output: Triangle Wave <div class="waveform-shape w-16 h-8 mt-1 flex items-end"><div class="w-1/2 h-full border-r-2 border-sky-500 transform skew-y-[-15deg]"></div><div class="w-1/2 h-full transform skew-y-[15deg]"></div></div></div>
+                    </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 5.2: Integrator Waveform Observations</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Input Waveform</th>
+                                    <th class="py-2 px-4 border-b">Input Frequency (Hz)</th>
+                                    <th class="py-2 px-4 border-b">Input Voltage (Vp-p)</th>
+                                    <th class="py-2 px-4 border-b">Observed Output Waveform Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">Square Wave</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">Triangle Wave</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">Sine Wave</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">Cosine Wave (90&deg; phase shifted sine)</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">3</td><td class="py-2 px-4 border-b text-center">DC Voltage (e.g., 1V)</td><td class="py-2 px-4 border-b text-center">N/A</td><td class="py-2 px-4 border-b text-center">1.0</td><td class="py-2 px-4 border-b text-center">Ramp (linearly increasing/decreasing)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Conclusion</h3>
+                    <p class="text-gray-700">Op-Amp differentiators and integrators perform mathematical operations on input signals, transforming waveforms as theoretically expected (e.g., square to spikes for differentiator, square to triangle for integrator).</p>
+                </div>
+            </section>
+
+            <section id="exp6" class="content-section">
+                <h2 class="text-2xl font-semibold text-sky-700 mb-4">Experiment 6: Generation of Square and Triangle Waveform using Op-Amp</h2>
+                <p class="mb-4 text-gray-600">This experiment demonstrates how Op-Amps can be used to create signal generator circuits. Specifically, it covers the astable multivibrator for square wave generation and its combination with an integrator to produce triangle waves.</p>
+                
+                <div class="mt-6">
+                    <h3 class="text-xl font-medium text-sky-600 mb-2">A. Square Wave Generator (Astable Multivibrator)</h3>
+                    <p class="text-gray-700">Uses positive feedback for hysteresis and an RC network for timing. Frequency depends on R, C, R1, R2.</p>
+                    <div class="circuit-diagram">
+                        <div class="circuit-component">OpAmp Inverting (-) &larr; C &larr; Vout</div>
+                        <div class="circuit-component">OpAmp Inverting (-) &larr; R &larr; Ground</div>
+                        <div class="circuit-component">OpAmp Non-Inverting (+) &larr; R1 &larr; Vout</div>
+                        <div class="circuit-component">OpAmp Non-Inverting (+) &larr; R2 &larr; Ground</div>
+                        <div class="circuit-component">Vout (Square Wave) from OpAmp Output</div>
+                    </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 6.1: Square Wave Generator Observations</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Designed Frequency (Hz)</th>
+                                    <th class="py-2 px-4 border-b">Observed Peak-to-Peak Voltage (Vp-p)</th>
+                                    <th class="py-2 px-4 border-b">Observed Frequency (Hz)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">10.0</td><td class="py-2 px-4 border-b text-center">980</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">5000</td><td class="py-2 px-4 border-b text-center">10.0</td><td class="py-2 px-4 border-b text-center">4950</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h3 class="text-xl font-medium text-sky-600 mb-2">B. Triangle Wave Generator</h3>
+                    <p class="text-gray-700">Combines a square wave generator with an integrator. The square wave output is integrated to produce a triangle wave.</p>
+                    <div class="circuit-diagram">
+                        <p class="text-sm mb-2">Square Wave Generator (as above) output feeds into Integrator input.</p>
+                        <div class="circuit-component">Square Wave Output &rarr; R_int &rarr; OpAmp2 Inverting (-)</div>
+                        <div class="circuit-component">OpAmp2 Non-Inverting (+) &rarr; Ground</div>
+                        <div class="circuit-component">Feedback: OpAmp2 Output &rarr; C_int &rarr; OpAmp2 Inverting (-)</div>
+                        <div class="circuit-component">Vout (Triangle Wave) from OpAmp2 Output</div>
+                    </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow">
+                            <caption class="caption-bottom text-sm text-gray-600 p-2">Table 6.2: Triangle Wave Generator Observations</caption>
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th class="py-2 px-4 border-b">S.No.</th>
+                                    <th class="py-2 px-4 border-b">Input Square Wave Freq (Hz)</th>
+                                    <th class="py-2 px-4 border-b">Observed Peak-to-Peak Voltage (Vp-p)</th>
+                                    <th class="py-2 px-4 border-b">Observed Frequency (Hz)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="py-2 px-4 border-b text-center">1</td><td class="py-2 px-4 border-b text-center">1000</td><td class="py-2 px-4 border-b text-center">8.0</td><td class="py-2 px-4 border-b text-center">1000</td></tr>
+                                <tr><td class="py-2 px-4 border-b text-center">2</td><td class="py-2 px-4 border-b text-center">5000</td><td class="py-2 px-4 border-b text-center">1.6</td><td class="py-2 px-4 border-b text-center">5000</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium text-sky-600 mt-4 mb-2">Conclusion</h3>
+                    <p class="text-gray-700">Op-Amps can be effectively used to generate stable square and triangle waveforms, with frequencies determined by the chosen component values.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        function showSection(sectionId, navElement) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            navElement.classList.add('active');
+            window.scrollTo(0,0); // Scroll to top of page on section change
+        }
+
+        function toggleCollapse(element) {
+            const content = element.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+                element.textContent = element.textContent.replace("Collapse", "Expand");
+            } else {
+                content.style.display = "block";
+                element.textContent = element.textContent.replace("Expand", "Collapse");
+            }
+        }
+        
+        // Initialize first section
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('exp1', document.querySelector('.nav-link'));
+            renderPnDiodeChart();
+            renderBjtAmplifierChart();
+            renderLpfChart();
+
+            // Automatically expand theory sections if desired, or leave them collapsed
+            // document.querySelectorAll('.collapsible-trigger').forEach(trigger => toggleCollapse(trigger));
+        });
+
+        // Chart.js - Sample Data and Rendering
+        function renderPnDiodeChart() {
+            const ctx = document.getElementById('pnDiodeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [-30, -20, -10, -5, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], // Voltage (V)
+                    datasets: [{
+                        label: 'Forward Bias Current (mA)',
+                        data: [null, null, null, null, 0, 0, 0, 0.1, 0.2, 0.5, 2, 10, 20],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        tension: 0.1,
+                        yAxisID: 'yFB',
+                    }, {
+                        label: 'Reverse Bias Current (\u00B5A)',
+                        data: [-1.2, -0.5, -0.2, -0.1, 0, null, null, null, null, null, null, null, null],
+                        borderColor: 'rgb(239, 68, 68)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                        tension: 0.1,
+                        yAxisID: 'yRB',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Voltage (V)' }
+                        },
+                        yFB: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Forward Current (mA)' },
+                            suggestedMin: 0,
+                            suggestedMax: 25
+                        },
+                        yRB: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'Reverse Current (\u00B5A)' },
+                            grid: { drawOnChartArea: false, },
+                            suggestedMin: -2,
+                            suggestedMax: 0.1
+                        }
+                    },
+                    plugins: {
+                        title: { display: true, text: 'PN Junction Diode I-V Characteristics (Sample)' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + (context.datasetIndex === 0 ? ' mA' : ' \u00B5A');
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderBjtAmplifierChart() {
+            const ctx = document.getElementById('bjtAmplifierChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['10Hz', '100Hz', '1kHz', '10kHz', '100kHz', '1MHz'], // Frequency
+                    datasets: [{
+                        label: 'Voltage Gain (dB)',
+                        data: [5, 18, 25, 24, 15, 3], // Sample Gain values in dB
+                        borderColor: 'rgb(16, 185, 129)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Frequency (Hz)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Gain (dB)' },
+                            suggestedMin: 0
+                        }
+                    },
+                    plugins: {
+                        title: { display: true, text: 'BJT CE Amplifier Frequency Response (Sample)' }
+                    }
+                }
+            });
+        }
+
+        function renderLpfChart() {
+            const ctx = document.getElementById('lpfChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['10Hz', '50Hz', '100Hz', '500Hz', '1kHz', '2kHz', '5kHz', '10kHz'], // Frequency
+                    datasets: [{
+                        label: 'Gain (dB)',
+                        data: [5.9, 5.8, 5.5, 4.0, 3.0, 0, -5, -11], // Sample Gain values for fc=1kHz, Passband gain approx 6dB
+                        borderColor: 'rgb(217, 70, 239)',
+                        backgroundColor: 'rgba(217, 70, 239, 0.5)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Frequency (Hz)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Gain (dB)' }
+                        }
+                    },
+                    plugins: {
+                        title: { display: true, text: 'Active Low Pass Filter Frequency Response (Sample fc=1kHz)' }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
+
